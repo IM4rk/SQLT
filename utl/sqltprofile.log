@@ -1,0 +1,145 @@
+SQL>SET SERVEROUT ON SIZE UNL;
+SQL>REM $Header: 215187.1 sqltprofile.sql 11.4.5.0 2012/11/21 carlos.sierra $
+SQL>REM
+SQL>REM Copyright (c) 2000-2013, Oracle Corporation. All rights reserved.
+SQL>REM
+SQL>REM AUTHOR
+SQL>REM   carlos.sierra@oracle.com
+SQL>REM
+SQL>REM SCRIPT
+SQL>REM   sqlt/utl/sqltprofile.sql
+SQL>REM
+SQL>REM DESCRIPTION
+SQL>REM   This script generates another that contains the commands to
+SQL>REM   create a manual custom SQL Profile out of a known plan from
+SQL>REM   memory or AWR. The manual custom profile can be implemented
+SQL>REM   into the same SOURCE system where the plan was retrieved,
+SQL>REM   or into another similar TARGET system that has same schema
+SQL>REM   objects referenced by the SQL that generated the known plan.
+SQL>REM
+SQL>REM PRE-REQUISITES
+SQL>REM   1. Execute SQLT (any method) in the SOURCE system.
+SQL>REM   2. Oracle Tuning Pack license.
+SQL>REM
+SQL>REM PARAMETERS
+SQL>REM   1. Statement ID as per SQLT in SOURCE system (required)
+SQL>REM      A list of statement ids is presented.
+SQL>REM   2. Plan Hash Value for which a manual custom SQL Profile is
+SQL>REM      needed (required). A list of known plans is presented.
+SQL>REM
+SQL>REM EXECUTION
+SQL>REM   1. Navigate to sqlt/utl directory.
+SQL>REM   2. Connect into SQL*Plus as application user or SYSDBA.
+SQL>REM   3. Execute script sqltprofile.sql passing statement id and
+SQL>REM      plan hash value (parameters can be passed inline or until
+SQL>REM      requested).
+SQL>REM
+SQL>REM EXAMPLE
+SQL>REM   # cd sqlt/utl
+SQL>REM   # sqlplus / as sysdba
+SQL>REM   SQL> START sqltprofile.sql [statement id] [plan hash value];
+SQL>REM   SQL> START sqltprofile.sql 32263 923669362;
+SQL>REM   SQL> START sqltprofile.sql 32263;
+SQL>REM   SQL> START sqltprofile.sql;
+SQL>REM
+SQL>REM NOTES
+SQL>REM   1. For possible errors see sqltprofile.log
+SQL>REM   2. If SQLT is not installed in SOURCE, use instead:
+SQL>REM      sqlt/utl/coe_xfr_sql_profile.sql
+SQL>REM   3. Be aware that using DBMS_SQLTUNE requires a license for
+SQL>REM      Oracle Tuning Pack
+SQL>REM
+SQL>-- begin common
+SQL>DEF _SQLPLUS_RELEASE
+DEFINE _SQLPLUS_RELEASE = "1201000200" (CHAR)
+SQL>SELECT USER FROM DUAL;
+
+USER
+------------------------------
+DBAMGR
+SQL>SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') current_time FROM DUAL;
+
+CURRENT_TIME
+-------------------
+2018-04-04 16:53:19
+SQL>SELECT * FROM v$version;
+
+BANNER                                                                               CON_ID
+-------------------------------------------------------------------------------- ----------
+Oracle Database 12c Standard Edition Release 12.1.0.2.0 - 64bit Production                0
+PL/SQL Release 12.1.0.2.0 - Production                                                    0
+CORE	12.1.0.2.0	Production                                                                0
+TNS for Linux: Version 12.1.0.2.0 - Production                                            0
+NLSRTL Version 12.1.0.2.0 - Production                                                    0
+SQL>SELECT * FROM v$instance;
+
+INSTANCE_NUMBER INSTANCE_NAME    HOST_NAME                                                        VERSION           STARTUP_TIME       STATUS       PAR    THREAD# ARCHIVE LOG_SWITCH_WAIT LOGINS
+--------------- ---------------- ---------------------------------------------------------------- ----------------- ------------------ ------------ --- ---------- ------- --------------- ----------
+SHU DATABASE_STATUS   INSTANCE_ROLE      ACTIVE_ST BLO     CON_ID INSTANCE_MO EDITION FAMILY
+--- ----------------- ------------------ --------- --- ---------- ----------- ------- --------------------------------------------------------------------------------
+              1 ec3dev1          fiv-dev-db8.fivium.local                                         12.1.0.2.0        14-MAR-18          OPEN         NO           1 STARTED                 ALLOWED
+NO  ACTIVE            PRIMARY_INSTANCE   NORMAL    NO           0 REGULAR     SE
+
+SQL>SELECT name, value FROM v$parameter2 WHERE name LIKE '%dump_dest';
+
+NAME
+----------------------------------------
+VALUE
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+background_dump_dest
+/oracle/product/12.1.0/db1/rdbms/log
+
+user_dump_dest
+/oracle/product/12.1.0/db1/rdbms/log
+
+core_dump_dest
+/oracle/diag/rdbms/ec3dev1/ec3dev1/cdump
+
+SQL>SELECT directory_name||' '||directory_path directories FROM dba_directories WHERE directory_name LIKE 'SQLT$%' OR directory_name LIKE 'TRCA$%' ORDER BY 1;
+
+DIRECTORIES
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SQLT$BDUMP /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+SQLT$DIAG /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+SQLT$STAGE /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+SQLT$UDUMP /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+TRCA$INPUT1 /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+TRCA$INPUT2 /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+TRCA$STAGE /oracle/diag/rdbms/ec3dev1/ec3dev1/trace
+SQL>-- end common
+SQL>SET TERM ON ECHO OFF;
+... please wait ...
+
+STAID                METHOD       INSTANCE
+-------------------- ------------ --------------------------------
+SQL_TEXT
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+10749                XTR          ec3dev1
+ ----ECASE search------------------ INSERT INTO casemgr.se
+
+
+Parameter 1:
+STATEMENT_ID (required)
+
+Enter value for 1: 10749
+
+
+PLAN_HASH_VALUE ATTRIBUTE
+--------------- ---------
+     1721216794 [B]
+     3855822730 [W]
+
+Parameter 2:
+PLAN_HASH_VALUE (required)
+
+Enter value for 2: 1721216794
+
+Values passed to sqltprofile:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+STATEMENT_ID   : "10749"
+PLAN_HASH_VALUE: "1721216794"
+
+16:53:35    0 sqlt$r: -> custom_sql_profile
+16:53:35    0 sqlt$r: skip "custom_sql_profile" as per "sql_tuning_advisor" parameter
+16:53:35    0 sqlt$r: <- custom_sql_profile
+No fatal errors!

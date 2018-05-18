@@ -1,0 +1,236 @@
+SQL>SET TERM ON ECHO OFF;
+
+To monitor progress, login into another session and execute:
+SQL> SELECT * FROM SQLTXADMIN.sqlt$_log_v;
+
+... collecting diagnostics details, please wait ...
+
+In case of a disconnect review log file in current directory
+If running as SYS in 12c make sure to review sqlt_instructions.html first
+
+  1  INSERT INTO casemgr.search_results (case_id, target_date, drafter_target_date, drafter_target_days, case_number,case_year, case_ref, cases_count, total, number_string
+  2      , oe_list, forename, surname, am_forename, am_surname, pm_forename, pm_surname, stage_id, template_name,  td_id, case_status_desc, case_officer, external_loader_count, sent_to_minister_flag
+  3      ,   contribution_details, text_relevance_score, free_text_snippet, free_text_section, free_text_match_count, text_relevance_score_doc, free_text_snippet_doc, free_text_category,
+  4   free_text_match_count_doc, free_text_file_id)
+  5  WITH
+  6   case_privs AS (
+  7    --
+  8    -- Case ids that exist and this user can see
+  9    --
+ 10    SELECT
+ 11         xcd.cd_id
+ 12    FROM
+ 13         casemgr.xview_case_details xcd
+ 14    JOIN casemgr.vw_case_access vc ON vc.case_id = xcd.case_id AND vc.wua_id = 42 AND vc.system_area = xcd.system_area AND casemgr.ca_access.check_priv(vc.access_level, 'SEARCH') = 'true'
+ 15    WHERE
+ 16         xcd.status_control  = 'C'
+ 17    AND  xcd.case_status    != 'DRAFT'
+ 18    AND  xcd.system_area     = 'BIS_CU'
+ 19  )
+ 20  ,
+ 21   t1 AS (
+ 22    --
+ 23    -- Main search filter
+ 24    --
+ 25    SELECT DISTINCT
+ 26      xcd.case_id
+ 27    , ct.target_date
+ 28    , ct.drafter_target_date
+ 29    , NVL2(ct.drafter_days_text, ct.drafter_days_text || ' (Paused)', NULL) drafter_target_days
+ 30    , ct.drafter_target_when_known drafter_target_disp
+ 31    , st.to_number_safe(substr(c.case_number,0, INSTR(c.case_number,'/')-1)) case_year
+ 32    , NULL text_relevance_score
+ 33    , NULL snippet
+ 34    , NULL section
+ 35    , NULL matched_count
+ 36    , NULL text_relevance_score_doc
+ 37    , NULL snippet_doc
+ 38    , NULL document_category
+ 39    , NULL matched_count_doc
+ 40    , NULL fox_file_id
+ 41    FROM case_privs                     cp
+ 42    JOIN casemgr.xview_case_details     xcd ON xcd.cd_id   = cp.cd_id
+ 43    JOIN casemgr.case_type_attributes   cta ON cta.case_type = xcd.case_type AND cta.system_area = xcd.system_area
+ 44    JOIN casemgr.cases                  c   ON xcd.case_id = c.id
+ 45    JOIN casemgr.case_timeliness        ct ON ct.case_uref = c.uref_value
+ 46    JOIN casemgr.case_stage_tip_initial_reopen cstio ON cstio.cd_id = xcd.cd_id AND cstio.status_control = 'C'
+ 47    LEFT OUTER JOIN casemgr.foi_case_details fcd ON fcd.cd_id = xcd.cd_id
+ 48    LEFT JOIN casemgr.xview_case_contacts xcc ON xcc.cd_id = xcd.cd_id
+ 49    WHERE xcd.status_control = 'C'
+ 50    AND xcd.case_status               = 'OPEN'
+ 51  )
+ 52  ,
+ 53   t2 AS (
+ 54    SELECT
+ 55      t1.case_id
+ 56    , t1.target_date
+ 57    , t1.drafter_target_disp
+ 58    , t1.drafter_target_days
+ 59    , t1.text_relevance_score
+ 60    , t1.snippet
+ 61    , t1.section
+ 62    , t1.matched_count
+ 63    , t1.text_relevance_score_doc
+ 64    , t1.snippet_doc
+ 65    , t1.document_category
+ 66    , t1.matched_count_doc
+ 67    , t1.fox_file_id
+ 68    , c.case_number
+ 69    , t1.case_year
+ 70    , c.case_ref
+ 71    , xcd.create_method
+ 72    , count(1) OVER (PARTITION BY 1) cases_count
+ 73    FROM t1
+ 74    JOIN casemgr.cases c ON c.id = t1.case_id
+ 75    JOIN casemgr.xview_case_details xcd ON xcd.case_id = c.id
+ 76    WHERE (xcd.status_control = 'C'
+ 77    AND t1.target_date >= '2018-03-01/00:00:00'
+ 78    AND t1.target_date <= '2018-03-31/23:59:59'
+ 79    )
+ 80    ORDER BY t1.case_year DESC NULLS LAST, c.case_number DESC
+ 81  )
+ 82  ,
+ 83   t3 AS (
+ 84    SELECT
+ 85      t2.case_id
+ 86    , t2.target_date
+ 87    , t2.drafter_target_disp
+ 88    , t2.drafter_target_days
+ 89    , t2.case_number
+ 90    , t2.case_year
+ 91    , t2.case_ref
+ 92    , t2.cases_count
+ 93    , t2.text_relevance_score
+ 94    , t2.snippet
+ 95    , t2.section
+ 96    , t2.matched_count
+ 97    , t2.text_relevance_score_doc
+ 98    , t2.snippet_doc
+ 99    , t2.document_category
+100    , t2.matched_count_doc
+101    , t2.fox_file_id
+102    , NULL external_loader_count
+103    FROM t2
+104    WHERE rownum <= 2500
+105  )
+106  SELECT
+107    search_matches.case_id
+108  , search_matches.target_date
+109  , search_matches.drafter_target_disp
+110  , search_matches.drafter_target_days
+111  , search_matches.case_number
+112  , search_matches.case_year
+113  , search_matches.case_ref
+114  , search_matches.cases_count
+115  , nvl(rc.total, 0)
+116  , rc.number_string
+117  , rc.oe_list
+118  , rm.forename
+119  , rm.surname
+120  , rm2.forename am_forename
+121  , rm2.surname am_surname
+122  , rm3.forename pm_forename
+123  , rm3.surname pm_surname
+124  , cstio.stage_id
+125  , xtd.template_name
+126  , xtd.td_id
+127  , casemgr.ca_utils.get_status_description(search_matches.case_id) case_status_desc
+128  , casemgr.ca_utils.get_case_officer(search_matches.case_id) case_officer
+129  , search_matches.external_loader_count
+130  , CASE WHEN xcd.sent_to_minister_flag = 'true' OR xcd.sent_to_second_minister_flag = 'true' THEN 'true' ELSE 'false' END sent_to_minister_flag
+131  , rc.contribution_details
+132  , search_matches.text_relevance_score
+133  , search_matches.snippet
+134  , search_matches.section
+135  , search_matches.matched_count
+136  , search_matches.text_relevance_score_doc
+137  , search_matches.snippet_doc
+138  , search_matches.document_category
+139  , search_matches.matched_count_doc
+140  , search_matches.fox_file_id
+141  FROM t3                                        search_matches
+142  JOIN casemgr.xview_case_details                xcd ON search_matches.case_id = xcd.case_id
+143  JOIN casemgr.case_stage_tip_initial_reopen cstio ON cstio.cd_id = xcd.cd_id AND cstio.status_control = 'C'
+144  LEFT JOIN casemgr.xview_template_documents     xtd ON xcd.campaign_id        = xtd.td_id                     AND xtd.status_control = 'C'
+145  LEFT JOIN decmgr.xview_resource_people_history rm  ON rm.rp_id               = xcd.responding_minister_rp_id AND rm.status_control  = 'C'
+146  LEFT JOIN decmgr.xview_resource_people_history rm2 ON rm2.rp_id              = xcd.addressee_minister_rp_id AND rm2.status_control = 'C'
+147  LEFT JOIN decmgr.xview_resource_people_history rm3 ON rm3.rp_id              = xcd.policy_minister_rp_id AND rm3.status_control = 'C'
+148  LEFT JOIN (
+149          SELECT
+150            t.case_id
+151          , t.total
+152          , CASE WHEN t.open_count > 0 THEN '(' || open_count || ' Open)' END number_string
+153          , t.oe_list
+154          , NULL contribution_details
+155          FROM casemgr.referral_counts t
+156          WHERE t.referral_type = 'CONTRIBUTION'
+157          AND t.case_id IN ( SELECT case_id FROM t3)
+158        )
+159                                                 rc  ON xcd.case_id            = rc.case_id
+160  WHERE xcd.status_control = 'C'
+161  UNION ALL
+162  SELECT
+163  NULL case_id
+164  , NULL target_date
+165  , NULL drafter_target_date
+166  , NULL
+167  , NULL case_number
+168  , NULL case_year
+169  , 'EXTERNAL_LOADER_DUMMY_ROW' case_ref
+170  , NULL cases_count
+171  , NULL
+172  , NULL
+173  , NULL
+174  , NULL
+175  , NULL
+176  , NULL
+177  , NULL
+178  , NULL
+179  , NULL external_loader_count
+180  , NULL
+181  , NULL
+182  , NULL
+183  , NULL
+184  , NULL
+185  , NULL
+186  , NULL
+187  , NULL
+188  , NULL
+189  , NULL
+190  , NULL
+191  , NULL
+192  , NULL
+193  , NULL
+194  , NULL
+195  , NULL
+196  , NULL
+197* FROM dual
+
+PREV_SQL_ID   PREV_CHILD_NUMBER
+------------- -----------------
+0yqs0s4cf8xnv                 3
+Elapsed: 00:00:00.07
+Elapsed: 00:00:00.00
+
+SQL_TEXT
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+INSERT INTO casemgr.search_results (case_id, target_date, drafter_target_date, drafter_target_days, case_number,case_year, case_ref, cases_count, total, number_string     , oe_list, forename, surname, am_forename, am_surname, pm_forename, pm_surname, stage_id, template_name,  td_id, case_status_desc, case_officer, external_loader_count, sent_to_minister_flag     ,   contribution_details, text_relevance_score, free_text_snippet, free_text_section, free_text_match_count, text_relevance_score_doc, free_text_snippet_doc, free_text_category,  free_text_match_count_doc, free_text_file_id) WITH  case_privs AS (   --   -- Case ids that exist and this user can see   --   SELECT        xcd.cd_id   FROM        casemgr.xview_case_details xcd   JOIN casemgr.vw_case_access vc ON vc.case_id = xcd.case_id AND vc.wua_id = 42 AND vc.system_area = xcd.system_area AND casemgr.ca_access.check_priv(vc.access_level, 'SEARCH') = 'true'   WHERE        xcd.status_control  = 'C'   AND  xcd.case_status    != 'DRA
+Elapsed: 00:00:00.05
+BEGIN SQLTXADMIN.sqlt$i.xecute_end(p_statement_id => :v_statement_id, p_string => 'sqlt_s'||:v_statement_id, p_sql_id => '0yqs0s4cf8xnv', p_child_number => '         3', p_input_filename => 'my_query.sql', p_password => 'Y'); END;
+
+*
+ERROR at line 1:
+ORA-01013: user requested cancel of current operation
+ORA-48121: error with opening the ADR stream file [/oracle/diag/rdbms/ec3st1/ec3st1/trace/ec3st1_ora_25461_s96765_10053_6.trm] [0]
+ORA-48127: attempting to open a file that does not exist
+Linux-x86_64 Error: 2: No such file or directory
+Additional information: 5
+ORA-48121: error with opening the ADR stream file [/oracle/diag/rdbms/ec3st1/ec3st1/trace/ec3st1_ora_25461_s96765_10053_5.trm] [0]
+ORA-48127: attempting to open a file that does not exist
+Linux-x86_64 Error: 2: No such file or directory
+Additional information: 5
+ORA-06512: at "SQLTXADMIN.SQLT$I", line 980
+ORA-06512: at "SQLTXADMIN.SQLT$I", line 2385
+ORA-06512: at line 1
+
+

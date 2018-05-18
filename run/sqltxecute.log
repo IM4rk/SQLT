@@ -1,0 +1,714 @@
+
+SQL>SET SERVEROUT ON SIZE UNL;
+SQL>SET SQLBL ON;
+SQL>PRO
+
+SQL>SELECT USER FROM DUAL;
+
+USER
+------------------------------
+DBAMGR
+
+SQL>SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD HH24:MI:SS') current_time FROM DUAL;
+
+CURRENT_TIME
+-------------------
+2018-04-04 16:15:02
+
+SQL>SELECT * FROM product_component_version;
+
+PRODUCT
+----------------------------------------------------------------------------------------------------
+VERSION
+----------------------------------------------------------------------------------------------------
+STATUS
+----------------------------------------------------------------------------------------------------
+NLSRTL
+12.1.0.2.0
+Production
+
+Oracle Database 12c Standard Edition
+12.1.0.2.0
+64bit Production
+
+PL/SQL
+12.1.0.2.0
+Production
+
+TNS for Linux:
+12.1.0.2.0
+Production
+
+
+SQL>SELECT * FROM v$version;
+
+BANNER                                                                               CON_ID
+-------------------------------------------------------------------------------- ----------
+Oracle Database 12c Standard Edition Release 12.1.0.2.0 - 64bit Production                0
+PL/SQL Release 12.1.0.2.0 - Production                                                    0
+CORE	12.1.0.2.0	Production                                                                0
+TNS for Linux: Version 12.1.0.2.0 - Production                                            0
+NLSRTL Version 12.1.0.2.0 - Production                                                    0
+
+SQL>SELECT * FROM v$instance;
+
+INSTANCE_NUMBER INSTANCE_NAME    HOST_NAME
+--------------- ---------------- ----------------------------------------------------------------
+VERSION           STARTUP_TIME       STATUS       PAR    THREAD# ARCHIVE LOG_SWITCH_WAIT LOGINS
+----------------- ------------------ ------------ --- ---------- ------- --------------- ----------
+SHU DATABASE_STATUS   INSTANCE_ROLE      ACTIVE_ST BLO     CON_ID INSTANCE_MO EDITION
+--- ----------------- ------------------ --------- --- ---------- ----------- -------
+FAMILY
+--------------------------------------------------------------------------------
+              1 ec3st1           fiv-dev-db8.fivium.local
+12.1.0.2.0        21-FEB-18          OPEN         NO           1 STARTED                 ALLOWED
+NO  ACTIVE            PRIMARY_INSTANCE   NORMAL    NO           0 REGULAR     SE
+
+
+
+SQL>SELECT name, value FROM v$parameter2 WHERE name LIKE '%dump_dest';
+
+NAME
+----------------------------------------
+VALUE
+----------------------------------------------------------------------------------------------------
+background_dump_dest
+/oracle/product/12.1.0/db1/rdbms/log
+
+user_dump_dest
+/oracle/product/12.1.0/db1/rdbms/log
+
+core_dump_dest
+/oracle/diag/rdbms/ec3st1/ec3st1/cdump
+
+
+SQL>SELECT directory_name||' '||directory_path directories FROM sys.dba_directories WHERE directory_name LIKE 'SQLT$%' OR directory_name LIKE 'TRCA$%' ORDER BY 1;
+
+DIRECTORIES
+----------------------------------------------------------------------------------------------------
+SQLT$BDUMP /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$DIAG /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$STAGE /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$UDUMP /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$INPUT1 /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$INPUT2 /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$STAGE /oracle/diag/rdbms/ec3st1/ec3st1/trace
+
+7 rows selected.
+
+SQL>PRO
+
+SQL>DEF _SQLPLUS_RELEASE
+DEFINE _SQLPLUS_RELEASE = "1201000200" (CHAR)
+SQL>PRO
+
+SQL>SHO parameters NLS
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+nls_calendar                         string      GREGORIAN
+nls_comp                             string      BINARY
+nls_currency                         string      £
+nls_date_format                      string      DD-MON-RR
+nls_date_language                    string      ENGLISH
+nls_dual_currency                    string      €
+nls_iso_currency                     string      UNITED KINGDOM
+nls_language                         string      ENGLISH
+nls_length_semantics                 string      BYTE
+nls_nchar_conv_excp                  string      FALSE
+nls_numeric_characters               string      .,
+nls_sort                             string      BINARY
+nls_territory                        string      UNITED KINGDOM
+nls_time_format                      string      HH24.MI.SSXFF
+nls_time_tz_format                   string      HH24.MI.SSXFF TZR
+nls_timestamp_format                 string      DD-MON-RR HH24.MI.SSXFF
+nls_timestamp_tz_format              string      DD-MON-RR HH24.MI.SSXFF TZR
+SQL>SHO parameters OPTIMIZER
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+optimizer_adaptive_features          boolean     FALSE
+optimizer_adaptive_reporting_only    boolean     FALSE
+optimizer_capture_sql_plan_baselines boolean     FALSE
+optimizer_dynamic_sampling           integer     2
+optimizer_features_enable            string      12.1.0.2
+optimizer_index_caching              integer     0
+optimizer_index_cost_adj             integer     100
+optimizer_inmemory_aware             boolean     TRUE
+optimizer_mode                       string      ALL_ROWS
+optimizer_secure_view_merging        boolean     FALSE
+optimizer_use_invisible_indexes      boolean     FALSE
+optimizer_use_pending_statistics     boolean     FALSE
+optimizer_use_sql_plan_baselines     boolean     TRUE
+SQL>SHO parameters DUMP_DEST
+
+NAME                                 TYPE        VALUE
+------------------------------------ ----------- ------------------------------
+background_dump_dest                 string      /oracle/product/12.1.0/db1/rdb
+                                                 ms/log
+core_dump_dest                       string      /oracle/diag/rdbms/ec3st1/ec3s
+                                                 t1/cdump
+user_dump_dest                       string      /oracle/product/12.1.0/db1/rdb
+                                                 ms/log
+SQL>PRO
+
+SQL>DEF tool_repository_schema = 'SQLTXPLAIN';
+SQL>DEF tool_administer_schema = 'SQLTXADMIN';
+SQL>DEF tool_version	       = '12.1.160429';
+SQL>DEF role_name	       = 'SQLT_USER_ROLE';
+SQL>DEF temporary_or_permanent = 'T';
+SQL>
+SQL>-- end common
+SQL>SQL>REM $Header: 215187.1 sqltxecute.sql 12.1.06 2014/01/30 carlos.sierra mauro.pagano $
+SQL>REM
+SQL>REM Copyright (c) 2000-2013, Oracle Corporation. All rights reserved.
+SQL>REM
+SQL>REM AUTHOR
+SQL>REM   carlos.sierra@oracle.com
+SQL>REM   mauro.pagano@oracle.com
+SQL>REM
+SQL>REM SCRIPT
+SQL>REM   sqlt/run/sqltxecute.sql
+SQL>REM
+SQL>REM DESCRIPTION
+SQL>REM   Collects SQL tuning diagnostics data and generates a set of
+SQL>REM   diagnostics files. It inputs one SCRIPT which contains one SQL
+SQL>REM   statement. If the SQL contains binds, the SCRIPT should also
+SQL>REM   include binds declaration and assignment. For an example of
+SQL>REM   its format see sqlt/input/sample/script1.sql provided.
+SQL>REM
+SQL>REM PRE-REQUISITES
+SQL>REM   1. Use a dedicated SQL*Plus connection (not a shared one).
+SQL>REM   2. User has been granted SQLT_USER_ROLE.
+SQL>REM
+SQL>REM PARAMETERS
+SQL>REM   1. SCRIPT name which contains SQL and its binds (required)
+SQL>REM   2. SQLTXPLAIN password (required).
+SQL>REM
+SQL>REM EXECUTION
+SQL>REM   1. Place your SCRIPT with one SQL into sqlt/input directory
+SQL>REM   2. Navigate to sqlt main directory.
+SQL>REM   3. Start SQL*Plus connecting as the application user of the SQL.
+SQL>REM   4. Execute script sqltxecute.sql passing directory path and
+SQL>REM      name of SCRIPT with one SQL and its bind variables.
+SQL>REM   5. Enter SQLTXPLAIN password when asked for it.
+SQL>REM
+SQL>REM EXAMPLE
+SQL>REM   # cd sqlt
+SQL>REM   # sqlplus apps
+SQL>REM   SQL> START [path]sqltxecute.sql [path]scriptname
+SQL>REM   SQL> START run/sqltxecute.sql input/sample/script1.sql
+SQL>REM
+SQL>REM NOTES
+SQL>REM   1. For possible errors see sqltxecute.log and sqltxecute2.log.
+SQL>REM   2. For better output execute this script connected as the
+SQL>REM      application user who issued the SQL.
+SQL>REM
+SQL>@@sqltcommon2.sql
+SQL>REM $Header: 215187.1 sqltcommon2.sql 11.4.5.4 2013/02/04 carlos.sierra $
+SQL>-- begin common
+SQL>WHENEVER SQLERROR CONTINUE;
+SQL>SELECT * FROM session_roles;
+
+ROLE
+----------------------------------------------------------------------------------------------------
+CONNECT
+RESOURCE
+DBA
+SELECT_CATALOG_ROLE
+HS_ADMIN_SELECT_ROLE
+EXECUTE_CATALOG_ROLE
+HS_ADMIN_EXECUTE_ROLE
+DELETE_CATALOG_ROLE
+CAPTURE_ADMIN
+EXP_FULL_DATABASE
+IMP_FULL_DATABASE
+DATAPUMP_EXP_FULL_DATABASE
+DATAPUMP_IMP_FULL_DATABASE
+GATHER_SYSTEM_STATISTICS
+OPTIMIZER_PROCESSING_RATE
+EM_EXPRESS_ALL
+EM_EXPRESS_BASIC
+SCHEDULER_ADMIN
+XDBADMIN
+XDB_SET_INVOKER
+WM_ADMIN_ROLE
+JAVA_ADMIN
+JAVA_DEPLOY
+OLAP_XS_ADMIN
+XS_RESOURCE
+OLAP_DBA
+SQLT_USER_ROLE
+
+27 rows selected.
+
+SQL>COL set_role_name NEW_V set_role_name;
+SQL>SELECT NULL set_role_name FROM DUAL;
+
+S
+-
+
+
+SQL>SELECT role set_role_name FROM session_roles WHERE role = '^^role_name.';
+
+SET_ROLE_NAME
+----------------------------------------------------------------------------------------------------
+SQLT_USER_ROLE
+
+SQL>SELECT DECODE('^^set_role_name.', NULL, '^^role_name.', NULL) set_role_name FROM DUAL;
+
+S
+-
+
+
+SQL>SET ROLE ^^set_role_name.;
+SET ROLE
+        *
+ERROR at line 1:
+ORA-01937: missing or invalid role name
+
+
+SQL>SELECT * FROM session_roles;
+
+ROLE
+----------------------------------------------------------------------------------------------------
+CONNECT
+RESOURCE
+DBA
+SELECT_CATALOG_ROLE
+HS_ADMIN_SELECT_ROLE
+EXECUTE_CATALOG_ROLE
+HS_ADMIN_EXECUTE_ROLE
+DELETE_CATALOG_ROLE
+CAPTURE_ADMIN
+EXP_FULL_DATABASE
+IMP_FULL_DATABASE
+DATAPUMP_EXP_FULL_DATABASE
+DATAPUMP_IMP_FULL_DATABASE
+GATHER_SYSTEM_STATISTICS
+OPTIMIZER_PROCESSING_RATE
+EM_EXPRESS_ALL
+EM_EXPRESS_BASIC
+SCHEDULER_ADMIN
+XDBADMIN
+XDB_SET_INVOKER
+WM_ADMIN_ROLE
+JAVA_ADMIN
+JAVA_DEPLOY
+OLAP_XS_ADMIN
+XS_RESOURCE
+OLAP_DBA
+SQLT_USER_ROLE
+
+27 rows selected.
+
+SQL>COL libraries FOR A64;
+SQL>SELECT SUBSTR(text, INSTR(text, ' ', 1, 3) + 1,  INSTR(text, ' ', 1, 6) - INSTR(text, ' ', 1, 3)) libraries
+  2    FROM all_source
+  3   WHERE owner = '^^tool_administer_schema.'
+  4  	AND line = 2
+  5  	AND text LIKE '%$Header%'
+  6   ORDER BY 1;
+
+LIBRARIES
+----------------------------------------------------------------
+sqcpkga.pkb 12.1.160429 2016/04/29
+sqcpkga.pks 12.1.160429 2016/04/29
+sqcpkgc.pkb 12.1.14 2015/12/06
+sqcpkgc.pks 12.1.10 2014/08/08
+sqcpkgd.pkb 12.1.160429 2016/04/29
+sqcpkgd.pks 12.1.11 2014/30/10
+sqcpkge.pkb 12.1.160429 2016/04/29
+sqcpkge.pks 12.1.10 2014/08/08
+sqcpkgh.pkb 12.1.160429 2016/04/29
+sqcpkgh.pks 12.1.10 2014/08/08
+sqcpkgi.pkb 12.1.160429 2016/04/29
+sqcpkgi.pks 12.1.10 2014/08/08
+sqcpkgm.pkb 12.1.14 2015/12/06
+sqcpkgm.pks 12.1.10 2014/08/08
+sqcpkgr.pkb 12.1.160429 2016/04/29
+sqcpkgr.pks 12.1.160429 2016/04/29
+sqcpkgs.pkb 12.1.10 2014/08/08
+sqcpkgs.pks 12.1.10 2014/08/08
+sqcpkgt.pkb 12.1.14 2015/12/06
+sqcpkgt.pks 12.1.10 2014/08/08
+tacpkge.pkb 11.4.5.0 2012/11/21
+tacpkge.pks 11.4.5.0 2012/11/21
+tacpkgg.pkb 12.1.14 2015/12/06
+tacpkgg.pks 11.4.5.0 2012/11/21
+tacpkgi.pkb 12.1.14 2015/12/06
+tacpkgi.pks 11.4.5.0 2012/11/21
+tacpkgp.pkb 11.4.5.8 2013/05/10
+tacpkgp.pks 11.4.5.0 2012/11/21
+tacpkgr.pkb 11.4.5.0 2012/11/21
+tacpkgr.pks 11.4.5.0 2012/11/21
+tacpkgt.pkb 12.1.160429 2016/04/29
+tacpkgt.pks 11.4.5.0 2012/11/21
+tacpkgx.pkb 11.4.5.0 2012/11/21
+tacpkgx.pks 11.4.5.0 2012/11/21
+
+34 rows selected.
+
+SQL>PRO
+
+SQL>SELECT status||' '||object_type||' '||object_name libraries
+  2    FROM all_objects
+  3   WHERE owner = '^^tool_administer_schema.'
+  4  	AND object_type LIKE 'PACKAGE%'
+  5   ORDER BY 1;
+
+LIBRARIES
+----------------------------------------------------------------
+VALID PACKAGE BODY SQLT$A
+VALID PACKAGE BODY SQLT$C
+VALID PACKAGE BODY SQLT$D
+VALID PACKAGE BODY SQLT$E
+VALID PACKAGE BODY SQLT$H
+VALID PACKAGE BODY SQLT$I
+VALID PACKAGE BODY SQLT$M
+VALID PACKAGE BODY SQLT$R
+VALID PACKAGE BODY SQLT$S
+VALID PACKAGE BODY SQLT$T
+VALID PACKAGE BODY TRCA$E
+VALID PACKAGE BODY TRCA$G
+VALID PACKAGE BODY TRCA$I
+VALID PACKAGE BODY TRCA$P
+VALID PACKAGE BODY TRCA$R
+VALID PACKAGE BODY TRCA$T
+VALID PACKAGE BODY TRCA$X
+VALID PACKAGE SQLT$A
+VALID PACKAGE SQLT$C
+VALID PACKAGE SQLT$D
+VALID PACKAGE SQLT$E
+VALID PACKAGE SQLT$H
+VALID PACKAGE SQLT$I
+VALID PACKAGE SQLT$M
+VALID PACKAGE SQLT$R
+VALID PACKAGE SQLT$S
+VALID PACKAGE SQLT$T
+VALID PACKAGE TRCA$E
+VALID PACKAGE TRCA$G
+VALID PACKAGE TRCA$I
+VALID PACKAGE TRCA$P
+VALID PACKAGE TRCA$R
+VALID PACKAGE TRCA$T
+VALID PACKAGE TRCA$X
+
+34 rows selected.
+
+SQL>PRO
+
+SQL>COL lib_count NEW_V lib_count FOR 999;
+SQL>COL role_count NEW_V role_count FOR 999;
+SQL>PRO
+
+SQL>SELECT COUNT(*) lib_count FROM all_objects WHERE owner = '^^tool_administer_schema.' AND object_type = 'PACKAGE' AND status = 'VALID';
+
+LIB_COUNT
+---------
+       17
+
+SQL>SELECT COUNT(*) role_count FROM user_role_privs WHERE granted_role IN ('^^role_name.', 'DBA');
+
+ROLE_COUNT
+----------
+         2
+
+SQL>SELECT granted_role FROM user_role_privs WHERE granted_role IN ('^^role_name.', 'DBA');
+
+GRANTED_ROLE
+----------------------------------------------------------------------------------------------------
+DBA
+SQLT_USER_ROLE
+
+SQL>SELECT user FROM dual;
+
+USER
+------------------------------
+DBAMGR
+
+SQL>PRO
+
+SQL>SET TERM ON ECHO OFF;
+
+
+PL/SQL procedure successfully completed.
+
+
+
+Parameter 1:
+SCRIPT name which contains SQL and its binds (required)
+
+Enter value for 1: my_query.sql
+
+Paremeter 2:
+SQLTXPLAIN password (required)
+
+Enter value for 2: cat8dog
+
+PL/SQL procedure successfully completed.
+
+
+
+PL/SQL procedure successfully completed.
+
+
+Value passed to sqltxecute:
+SCRIPT_WITH_SQL: "my_query.sql"
+
+
+PL/SQL procedure successfully completed.
+
+
+
+CONNECTED_USER
+------------------------------
+DBAMGR
+
+CURRENT_TIME
+-------------------
+2018-04-04 16:15:15
+
+BANNER                                                                               CON_ID
+-------------------------------------------------------------------------------- ----------
+Oracle Database 12c Standard Edition Release 12.1.0.2.0 - 64bit Production                0
+PL/SQL Release 12.1.0.2.0 - Production                                                    0
+CORE	12.1.0.2.0	Production                                                                0
+TNS for Linux: Version 12.1.0.2.0 - Production                                            0
+NLSRTL Version 12.1.0.2.0 - Production                                                    0
+
+
+
+***
+*** NOTE:
+*** If you get error below it means SQLTXPLAIN is not installed:
+***   PLS-00201: identifier 'SQLTXADMIN.SQLT$A' must be declared.
+*** In such case look for errors in NN_*.log files created during install.
+***
+
+***
+*** NOTE:
+*** If running as SYS in 12c make sure to review sqlt_instructions.html first
+***
+
+
+SQLT_VERSION
+----------------------------------------
+SQLT version number: 12.1.160429
+SQLT version date  : 2016-04-29
+Installation date  : 2018-03-26/13:02:30
+
+... please wait ...
+
+
+V_STATEMENT_ID
+--------------------------------
+96765
+
+
+STATEMENT_ID
+--------------------------------
+96765
+
+
+UNIQUE_ID
+--------------------------------
+sqlt_s96765
+
+
+LIBRARIES
+----------------------------------------------------------------
+VALID   PACKAGE      12.1.160429   SQLT$A
+VALID   PACKAGE      12.1.10       SQLT$C
+VALID   PACKAGE      12.1.11       SQLT$D
+VALID   PACKAGE      12.1.10       SQLT$E
+VALID   PACKAGE      12.1.10       SQLT$H
+VALID   PACKAGE      12.1.10       SQLT$I
+VALID   PACKAGE      12.1.10       SQLT$M
+VALID   PACKAGE      12.1.160429   SQLT$R
+VALID   PACKAGE      12.1.10       SQLT$S
+VALID   PACKAGE      12.1.10       SQLT$T
+VALID   PACKAGE      11.4.5.0      TRCA$E
+VALID   PACKAGE      11.4.5.0      TRCA$G
+VALID   PACKAGE      11.4.5.0      TRCA$I
+VALID   PACKAGE      11.4.5.0      TRCA$P
+VALID   PACKAGE      11.4.5.0      TRCA$R
+VALID   PACKAGE      11.4.5.0      TRCA$T
+VALID   PACKAGE      11.4.5.0      TRCA$X
+VALID   PACKAGE BODY 12.1.160429   SQLT$A
+VALID   PACKAGE BODY 12.1.14       SQLT$C
+VALID   PACKAGE BODY 12.1.160429   SQLT$D
+VALID   PACKAGE BODY 12.1.160429   SQLT$E
+VALID   PACKAGE BODY 12.1.160429   SQLT$H
+VALID   PACKAGE BODY 12.1.160429   SQLT$I
+VALID   PACKAGE BODY 12.1.14       SQLT$M
+VALID   PACKAGE BODY 12.1.160429   SQLT$R
+VALID   PACKAGE BODY 12.1.10       SQLT$S
+VALID   PACKAGE BODY 12.1.14       SQLT$T
+VALID   PACKAGE BODY 11.4.5.0      TRCA$E
+VALID   PACKAGE BODY 12.1.14       TRCA$G
+VALID   PACKAGE BODY 12.1.14       TRCA$I
+VALID   PACKAGE BODY 11.4.5.8      TRCA$P
+VALID   PACKAGE BODY 11.4.5.0      TRCA$R
+VALID   PACKAGE BODY 12.1.160429   TRCA$T
+VALID   PACKAGE BODY 11.4.5.0      TRCA$X
+
+16:15:15    0 sqlt$a: tool version: 12.1.160429
+16:15:15    0 sqlt$a: script version: 12.1.160429
+
+
+INSTALL_DATE
+--------------------
+2018-03-26/13:02:30
+
+
+HOST_NAME
+--------------------------------------------------------------------------------
+fivdevdb8
+
+
+SPFILE
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/oracle/product/12.1.0/db1/dbs/spfileec3st1.ora
+
+
+TRACES_DIRECTORY_PATH
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+UDUMP_PATH
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/oracle/diag/rdbms/ec3st1/ec3st1/trace/
+
+
+BDUMP_PATH
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/oracle/diag/rdbms/ec3st1/ec3st1/trace/
+
+
+
+USER_DUMP_DEST
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/oracle/product/12.1.0/db1/rdbms/log
+
+
+BACKGROUND_DUMP_DEST
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+/oracle/product/12.1.0/db1/rdbms/log
+
+
+DIRECTORIES
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+SQLT$BDUMP /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$DIAG /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$STAGE /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$UDUMP /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$INPUT1 /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$INPUT2 /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$STAGE /oracle/diag/rdbms/ec3st1/ec3st1/trace
+SQLT$STAGE: write test file tasqdirset.txt
+SQLT$STAGE: read test file tasqdirset.txt
+SQLT$STAGE: get attributes for file tasqdirset.txt
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> SQLT$STAGE: READ,WRITE access not revoked from SQLTXPLAIN due to error above (ignore this error)
+SQLT$STAGE: READ,WRITE access granted to SQLTXADMIN
+SQLT$STAGE: READ,WRITE access granted to SQLT_USER_ROLE
+SQLT$STAGE: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+TRCA$STAGE: write test file tasqdirset.txt
+TRCA$STAGE: read test file tasqdirset.txt
+TRCA$STAGE: get attributes for file tasqdirset.txt
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> TRCA$STAGE: READ,WRITE access not revoked from SQLTXPLAIN due to error above (ignore this error)
+TRCA$STAGE: READ,WRITE access granted to SQLTXADMIN
+TRCA$STAGE: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> SQLT$UDUMP: READ access not revoked from SQLTXPLAIN due to error above (ignore this error)
+SQLT$UDUMP: READ access granted to SQLTXADMIN
+SQLT$UDUMP: read test file tasqdirset.txt
+SQLT$UDUMP: get attributes for file tasqdirset.txt
+SQLT$UDUMP: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> SQLT$BDUMP: READ access not revoked from SQLTXPLAIN due to error above (ignore this error)
+SQLT$BDUMP: READ access granted to SQLTXADMIN
+SQLT$BDUMP: read test file tasqdirset.txt
+SQLT$BDUMP: get attributes for file tasqdirset.txt
+SQLT$BDUMP: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> SQLT$DIAG: READ access not revoked from SQLTXPLAIN due to error above (ignore this error)
+SQLT$DIAG: READ access granted to SQLTXADMIN
+SQLT$DIAG: read test file tasqdirset.txt
+SQLT$DIAG: get attributes for file tasqdirset.txt
+SQLT$DIAG: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> TRCA$INPUT1: READ access not revoked from SQLTXPLAIN due to error above (ignore this error)
+TRCA$INPUT1: READ access granted to SQLTXADMIN
+TRCA$INPUT1: read test file tasqdirset.txt
+TRCA$INPUT1: get attributes for file tasqdirset.txt
+TRCA$INPUT1: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+-> ORA-01927: cannot REVOKE privileges you did not grant
+-> TRCA$INPUT2: READ access not revoked from SQLTXPLAIN due to error above (ignore this error)
+TRCA$INPUT2: READ access granted to SQLTXADMIN
+TRCA$INPUT2: read test file tasqdirset.txt
+TRCA$INPUT2: get attributes for file tasqdirset.txt
+TRCA$INPUT2: /oracle/diag/rdbms/ec3st1/ec3st1/trace
+
+
+
+FILE_WITH_OUTPUT
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+my_query_output_s96765.txt
+
+PREV_SQL_ID   PREV_CHILD_NUMBER
+------------- -----------------
+9babjv8yq8ru3                 0
+16:15:15    0 sqlt$a: -> common_initialization
+16:15:15    0 sqlt$a: ALTER SESSION SET NLS_NUMERIC_CHARACTERS = ".,"
+16:15:15    0 sqlt$a: ALTER SESSION SET NLS_SORT = BINARY
+16:15:15    0 sqlt$a: <- common_initialization
+16:15:15    0 sqlt$i: ==> xecute_begin
+16:15:15    0 sqlt$a: -> create_statement_workspace
+16:15:15    0 sqlt$a: ** ORA-01403: no data found
+16:15:15    0 sqlt$a: selecting from sys.dba_rsrc_io_calibrate
+16:15:15    0 sqlt$a: statid = "s96765_ec3st1_fivdevdb8"
+16:15:15    0 sqlt$a: <- create_statement_workspace
+16:15:15    0 sqlt$i: => remote_trace_begin
+16:15:15    0 sqlt$i: no remote db_links were found/activated at this step
+16:15:15    0 sqlt$i: <= remote_trace_begin
+16:15:15    0 sqlt$a: => event_10046_10053_on
+16:15:15    0 sqlt$a: ALTER SESSION SET MAX_DUMP_FILE_SIZE = '200M'
+16:15:15    0 sqlt$a: ALTER SESSION SET TRACEFILE_IDENTIFIER = "s96765_10046_10053"
+16:15:15    0 sqlt$a: ALTER SESSION SET TIMED_STATISTICS = TRUE
+16:15:15    0 sqlt$a: ALTER SESSION SET STATISTICS_LEVEL = 'ALL'
+16:15:15    0 sqlt$d: => collect_perf_stats_pre
+16:15:15    0 sqlt$d: list_of_objects
+16:15:15    0 sqlt$d: 291 rows collected
+16:15:19    4 sqlt$a: ALTER SESSION SET EVENTS '10507 TRACE NAME CONTEXT FOREVER, LEVEL 1023'
+16:15:19    0 sqlt$a: skip 10241, 10032, 10033, 10104, 10730, 46049 on as per parameter event_others
+16:15:19    0 sqlt$a: ALTER SESSION SET EVENTS '10046 TRACE NAME CONTEXT FOREVER, LEVEL 12'
+16:15:19    0 sqlt$a: ALTER SESSION SET EVENTS 'TRACE [SQL_Optimizer.*]'
+
+NOTE:
+You used the XECUTE method connected as DBAMGR.
+
+In case of a session disconnect please verify the following:
+1. There are no errors in sqltxecute.log or sqltxecute2.log.
+2. Your SQL contains token "^^unique_id" within a comment.
+3. Your SQL ends with a semi-colon ";".
+4. You connected as the application user that issued original SQL.
+5. Script my_query.sql can execute stand-alone connected as DBAMGR
+6. User DBAMGR has been granted SQLT_USER_ROLE.
+
+In case of errors ORA-03113, ORA-03114 or ORA-07445 please just
+re-try this SQLT method. This tool handles some of the errors behind
+a disconnect when executed a second time.
+
+To actually diagnose the problem behind the disconnect, read ALERT
+log and provide referenced traces to Support. After the root cause
+of the disconnect is fixed then reset SQLT corresponding parameter.
+
+... executing my_query.sql ...
+
+In case of a disconnect review sqltxecute2.log and my_query_output_s96765.txt
+
+SQL>SPO ^^file_with_output.;

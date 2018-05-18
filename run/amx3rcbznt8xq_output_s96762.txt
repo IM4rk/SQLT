@@ -1,0 +1,20 @@
+SQL>-- This file ^^file_with_output. contains the output of ^^script_with_sql.
+SQL>--
+SQL>-- If you want to include this spool file with output of your script into zip file,
+SQL>-- or delete it automatically, use SQLT parameter xecute_script_output.
+SQL>--
+SQL>-- To permanently set this tool parameter connect as SQLTXPLAIN and issue:
+SQL>-- SQL> EXEC sqlt$a.set_param('xecute_script_output', 'ZIP');
+SQL>-- To temporarily set this tool parameter for a session connect as the application user and issue:
+SQL>-- SQL> EXEC SQLTXPLAIN.sqlt$a.set_sess_param('xecute_script_output', 'ZIP');
+SQL>--
+SQL>-- Valid values are these 3 below. Default is KEEP.
+SQL>-- ZIP (to include in zip file),
+SQL>-- KEEP (to generate spool file and leave it in local directory without including it in zip file),
+SQL>-- DELETE (to delete this spool file without including it in zip file).
+SQL>--
+SQL>SAVEPOINT sqlt_xecute_savepoint;
+Elapsed: 00:00:00.00
+SQL>@^^script_with_sql.
+SP2-0310: unable to open file "amx3rcbznt8xq.sql"
+SQL>SPO sqltxecute2.log;
